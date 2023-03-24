@@ -263,8 +263,8 @@ public:
         lheWeightPrecision_(params.getParameter<int32_t>("lheWeightPrecision")),
         maxPdfWeights_(params.getParameter<uint32_t>("maxPdfWeights")),
         keepAllPSWeights_(params.getParameter<bool>("keepAllPSWeights")),
-        debug_(params.getUntrackedParameter<bool>("debug", false)),
-        debugRun_(debug_.load()),
+        debug_(true),
+        debugRun_(true),
         hasIssuedWarning_(false),
         psWeightWarning_(false) {
     produces<nanoaod::FlatTable>();
@@ -322,6 +322,7 @@ public:
     }
 
     const auto genWeightChoice = &(streamCache(id)->weightChoice);
+    std::cout << "Is it valid? " << lheInfo.isValid() << std::endl;
     if (lheInfo.isValid()) {
       if (getLHEweightsFromGenInfo && !hasIssuedWarning_.exchange(true))
         edm::LogWarning("LHETablesProducer")
@@ -386,9 +387,12 @@ public:
 
     double w0 = lheProd.originalXWGTUP();
 
+    std::cout << "==========>The size of the weights is " << lheProd.weights().size() << std::endl;
+
     std::vector<double> wScale(scaleWeightIDs.size(), 1), wPDF(pdfWeightIDs.size(), 1), wRwgt(rwgtWeightIDs.size(), 1),
         wNamed(namedWeightIDs_.size(), 1);
     for (auto& weight : lheProd.weights()) {
+      std::cout << "==========> Here the weight is " << weight.wgt << std::endl;
       if (lheDebug)
         printf("Weight  %+9.5f   rel %+9.5f   for id %s\n", weight.wgt, weight.wgt / w0, weight.id.c_str());
       // now we do it slowly, can be optimized
@@ -553,6 +557,7 @@ public:
 
   // create an empty counter
   std::shared_ptr<DynamicWeightChoice> globalBeginRun(edm::Run const& iRun, edm::EventSetup const&) const override {
+    std::cout << "-------> BEGIN RUN!\n";
     edm::Handle<LHERunInfoProduct> lheInfo;
 
     bool lheDebug = debugRun_.exchange(
@@ -575,7 +580,7 @@ public:
 
       std::regex weightgroupmg26x("<weightgroup\\s+(?:name|type)=\"(.*)\"\\s+combine=\"(.*)\"\\s*>");
       std::regex weightgroup("<weightgroup\\s+combine=\"(.*)\"\\s+(?:name|type)=\"(.*)\"\\s*>");
-      std::regex weightgroupRwgt("<weightgroup\\s+(?:name|type)=\"(.*)\"\\s*>");
+      std::regex weightgroupRwgt("<weightgroup\\s+combine=\"(.*)\"\\s+(?:name|type)=\"(.*)\"\\s*>");
       std::regex endweightgroup("</weightgroup>");
       std::regex scalewmg26x(
           "<weight\\s+(?:.*\\s+)?id=\"(\\d+)\"\\s*(?:lhapdf=\\d+|dyn=\\s*-?\\d+)?\\s*((?:[mM][uU][rR]|renscfact)=\"("
@@ -632,8 +637,9 @@ public:
         for (unsigned int iLine = 0, nLines = lines.size(); iLine < nLines; ++iLine) {
           if (lheDebug)
             std::cout << lines[iLine];
-          if (std::regex_search(lines[iLine], groups, ismg26x ? weightgroupmg26x : weightgroup)) {
+          if (std::regex_search(lines[iLine], groups, ismg26x ? weightgroupmg26x : weightgroup) && false) {
             std::string groupname = groups.str(2);
+            std::cout << "======> groupname is " << groupname << std::endl;
             if (ismg26x)
               groupname = groups.str(1);
             if (lheDebug)
@@ -840,8 +846,10 @@ public:
               }
             }
           } else if (std::regex_search(lines[iLine], groups, weightgroupRwgt)) {
-            std::string groupname = groups.str(1);
-            if (groupname == "mg_reweighting") {
+            std::cout << "YES INSIDE!!!\n";
+            std::string groupname = groups.str(1) != " " ? groups.str(1) : groups.str(2);
+            std::cout << "groupname is " << groupname << std::endl;
+            if (groupname == "mg_reweighting" || groupname == "First-Weights") {
               if (lheDebug)
                 std::cout << ">>> Looks like a LHE weights for reweighting" << std::endl;
               for (++iLine; iLine < nLines; ++iLine) {
