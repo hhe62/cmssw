@@ -322,7 +322,7 @@ public:
     }
 
     const auto genWeightChoice = &(streamCache(id)->weightChoice);
-    std::cout << "Is it valid? " << lheInfo.isValid() << std::endl;
+    //std::cout << "Is it valid? " << lheInfo.isValid() << std::endl;
     if (lheInfo.isValid()) {
       if (getLHEweightsFromGenInfo && !hasIssuedWarning_.exchange(true))
         edm::LogWarning("LHETablesProducer")
@@ -387,12 +387,12 @@ public:
 
     double w0 = lheProd.originalXWGTUP();
 
-    std::cout << "==========>The size of the weights is " << lheProd.weights().size() << std::endl;
+    //std::cout << "==========>The size of the weights is " << lheProd.weights().size() << std::endl;
 
     std::vector<double> wScale(scaleWeightIDs.size(), 1), wPDF(pdfWeightIDs.size(), 1), wRwgt(rwgtWeightIDs.size(), 1),
         wNamed(namedWeightIDs_.size(), 1);
     for (auto& weight : lheProd.weights()) {
-      std::cout << "==========> Here the weight is " << weight.wgt << std::endl;
+      //std::cout << "==========> Here the weight is " << weight.wgt << std::endl;
       if (lheDebug)
         printf("Weight  %+9.5f   rel %+9.5f   for id %s\n", weight.wgt, weight.wgt / w0, weight.id.c_str());
       // now we do it slowly, can be optimized
